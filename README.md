@@ -43,7 +43,8 @@ CloudTrail events to be sent to them.
 
 ### Author
 
-[Dean Wilson](https://www.unixdaemon.net)
+ * Ana Fernandez del Alamo - original author and did all the heavy lifting
+ * [Dean Wilson](https://www.unixdaemon.net) - extracted to an external module
 
 ### License
 
