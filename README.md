@@ -1,4 +1,4 @@
-# Cloudtrail Terraform Module
+# CloudTrail Terraform Module
 
 Configure CloudTrail to send events to an S3 bucket and CloudWatch log group
 
