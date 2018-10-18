@@ -29,7 +29,7 @@ CloudTrail events to be sent to them.
 | bucketname | S3 bucketname to store cloudtrail events in | string | `cloudtrail` | no |
 | cloudtrail_log_retention | Number of days to retain cloudtrail logs | string | `90` | no |
 | cloudtrail_name | CloudTrail name. Combined with namespace to make it unique | string | `cloudtrail-all` | no |
-| cloudwatch_log_group_name | Cloudwatch log group name to send Cloudtrail events to | string | `cloudtrail/logs` | no |
+| cloudwatch_log_group_name | Cloudwatch log group name to send Cloudtrail events to. Combined with namespace to make it unique | string | `cloudtrail/logs` | no |
 | namespace | An identifier used to group all resources created by this module | string | `cloudtrail` | no |
 
 ## Outputs
