@@ -16,7 +16,7 @@ locals {
 data "template_file" "cloudtrail_s3_policy_template" {
   template = "${file("${path.module}/policies/cloudtrail_s3_policy.tpl")}"
 
-  vars {
+  vars = {
     bucket_name = "${local.bucketname}"
   }
 }
@@ -54,7 +54,7 @@ resource "aws_iam_role" "cloudtrail_cloudwatch_logs_role" {
 data "template_file" "cloudtrail_cloudwatch_logs_policy_template" {
   template = "${file("${path.module}/policies/cloudtrail_cloudwatch_logs_policy.tpl")}"
 
-  vars {
+  vars = {
     cloudwatch_log_group_arn = "${aws_cloudwatch_log_group.cloudtrail.arn}"
   }
 }
