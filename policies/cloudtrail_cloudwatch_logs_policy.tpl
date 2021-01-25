@@ -7,7 +7,7 @@
         "logs:CreateLogStream"
       ],
       "Resource": [
-        "${cloudwatch_log_group_arn}"
+        "${cloudwatch_log_group_arn}:*"
       ]
     },
     {
@@ -16,7 +16,7 @@
         "logs:PutLogEvents"
       ],
       "Resource": [
-        "${cloudwatch_log_group_arn}"
+        "${cloudwatch_log_group_arn}:*"
       ]
     }
   ]
