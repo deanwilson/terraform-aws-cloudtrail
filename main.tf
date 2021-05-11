@@ -41,7 +41,7 @@ resource "aws_s3_bucket" "cloudtrail" {
   tags = merge(
     local.default_tags,
     var.additional_tags,
-    map("Name", local.bucketname)
+    tomap({"Name" = local.bucketname})
   )
 }
 
