@@ -17,7 +17,7 @@ data "template_file" "cloudtrail_s3_policy_template" {
   template = file("${path.module}/policies/cloudtrail_s3_policy.tpl")
 
   vars = {
-    bucket_name = "${local.bucketname}"
+    bucket_name = local.bucketname
   }
 }
 
