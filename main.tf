@@ -11,16 +11,6 @@ locals {
 
 ## Resources
 
-### IAM
-
-data "template_file" "cloudtrail_s3_policy_template" {
-  template = file("${path.module}/policies/cloudtrail_s3_policy.tpl")
-
-  vars = {
-    bucket_name = local.bucketname
-  }
-}
-
 ### Implementation
 
 resource "aws_cloudwatch_log_group" "cloudtrail" {
@@ -35,14 +25,27 @@ resource "aws_cloudwatch_log_group" "cloudtrail" {
 
 resource "aws_s3_bucket" "cloudtrail" {
   bucket = local.bucketname
-  acl    = "private"
-  policy = data.template_file.cloudtrail_s3_policy_template.rendered
 
   tags = merge(
     local.default_tags,
     var.additional_tags,
-    tomap({"Name" = local.bucketname})
+    tomap({ "Name" = local.bucketname })
   )
+}
+
+resource "aws_s3_bucket_policy" "cloudtrail_s3_policy" {
+  bucket = aws_s3_bucket.cloudtrail.id
+  policy = templatefile(
+    "${path.module}/policies/cloudtrail_s3_policy.tpl",
+    {
+      bucket_name = local.bucketname
+    }
+  )
+}
+
+resource "aws_s3_bucket_acl" "cloudtrail_acl" {
+  bucket = aws_s3_bucket.cloudtrail.id
+  acl    = "private"
 }
 
 resource "aws_iam_role" "cloudtrail_cloudwatch_logs_role" {
@@ -51,18 +54,15 @@ resource "aws_iam_role" "cloudtrail_cloudwatch_logs_role" {
   assume_role_policy = file("${path.module}/policies/cloudtrail_assume_policy.json")
 }
 
-data "template_file" "cloudtrail_cloudwatch_logs_policy_template" {
-  template = file("${path.module}/policies/cloudtrail_cloudwatch_logs_policy.tpl")
-
-  vars = {
-    cloudwatch_log_group_arn = aws_cloudwatch_log_group.cloudtrail.arn
-  }
-}
-
 resource "aws_iam_policy" "cloudtrail_cloudwatch_logs_policy" {
-  name   = "${var.namespace}-cloudtrail-cloudwatch-logs"
-  path   = "/"
-  policy = data.template_file.cloudtrail_cloudwatch_logs_policy_template.rendered
+  name = "${var.namespace}-cloudtrail-cloudwatch-logs"
+  path = "/"
+  policy = templatefile(
+    "${path.module}/policies/cloudtrail_cloudwatch_logs_policy.tpl",
+    {
+      cloudwatch_log_group_arn = aws_cloudwatch_log_group.cloudtrail.arn
+    }
+  )
 }
 
 resource "aws_iam_role_policy_attachment" "cloudtrail_cloudwatch_logs_policy_attachment" {
