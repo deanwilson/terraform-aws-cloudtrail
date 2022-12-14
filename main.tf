@@ -16,11 +16,11 @@ data "aws_iam_policy_document" "bucket" {
     effect = "Allow"
 
     principals {
-      type = "Service"
+      type        = "Service"
       identifiers = ["cloudtrail.amazonaws.com"]
     }
 
-    actions = ["s3:GetBucketAcl"]
+    actions   = ["s3:GetBucketAcl"]
     resources = ["arn:aws:s3:::${local.bucketname}"]
   }
 
@@ -28,17 +28,17 @@ data "aws_iam_policy_document" "bucket" {
     effect = "Allow"
 
     principals {
-      type = "Service"
+      type        = "Service"
       identifiers = ["cloudtrail.amazonaws.com"]
     }
 
-    actions = ["s3:PutObject"]
+    actions   = ["s3:PutObject"]
     resources = ["arn:aws:s3:::${local.bucketname}/*"]
 
     condition {
-      test = "StringEquals"
+      test     = "StringEquals"
       variable = "s3:x-amz-acl"
-      values = ["bucket-owner-full-control"]
+      values   = ["bucket-owner-full-control"]
     }
   }
 }
@@ -46,10 +46,10 @@ data "aws_iam_policy_document" "bucket" {
 data "aws_iam_policy_document" "assume_role" {
   statement {
     effect = "Allow"
-    sid = ""
+    sid    = ""
 
     principals {
-      type = "Service"
+      type        = "Service"
       identifiers = ["cloudtrail.amazonaws.com"]
     }
 
@@ -59,15 +59,11 @@ data "aws_iam_policy_document" "assume_role" {
 
 data "aws_iam_policy_document" "logs" {
   statement {
-    effect = "Allow"
-    actions = ["logs:CreateLogStream"]
-    resources = [aws_cloudwatch_log_group.cloudtrail.arn]
-  }
-
-  statement {
-    effect = "Allow"
-    actions = ["logs:PutLogEvents"]
-    resources = [aws_cloudwatch_log_group.cloudtrail.arn]
+    effect  = "Allow"
+    actions = ["logs:CreateLogStream", "logs:PutLogEvents"]
+    resources = [
+      "${aws_cloudwatch_log_group.cloudtrail.arn}:*"
+    ]
   }
 }
 
@@ -112,8 +108,8 @@ resource "aws_iam_role" "cloudtrail_cloudwatch_logs_role" {
 }
 
 resource "aws_iam_policy" "cloudtrail_cloudwatch_logs_policy" {
-  name = "${var.namespace}-cloudtrail-cloudwatch-logs"
-  path = "/"
+  name   = "${var.namespace}-cloudtrail-cloudwatch-logs"
+  path   = "/"
   policy = data.aws_iam_policy_document.logs.json
 }
 
