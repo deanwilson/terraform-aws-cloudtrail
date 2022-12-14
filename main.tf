@@ -60,7 +60,13 @@ data "aws_iam_policy_document" "assume_role" {
 data "aws_iam_policy_document" "logs" {
   statement {
     effect = "Allow"
-    actions = ["logs:CreateLogStream", "logs:PutLogEvents"]
+    actions = ["logs:CreateLogStream"]
+    resources = [aws_cloudwatch_log_group.cloudtrail.arn]
+  }
+
+  statement {
+    effect = "Allow"
+    actions = ["logs:PutLogEvents"]
     resources = [aws_cloudwatch_log_group.cloudtrail.arn]
   }
 }
