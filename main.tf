@@ -9,6 +9,62 @@ locals {
   bucketname = "${var.namespace}-${var.bucketname}"
 }
 
+## Data
+
+data "aws_iam_policy_document" "bucket" {
+  statement {
+    effect = "Allow"
+
+    principals {
+      type = "Service"
+      identifiers = ["cloudtrail.amazonaws.com"]
+    }
+
+    actions = ["s3:GetBucketAcl"]
+    resources = ["arn:aws:s3:::${local.bucketname}"]
+  }
+
+  statement {
+    effect = "Allow"
+
+    principals {
+      type = "Service"
+      identifiers = ["cloudtrail.amazonaws.com"]
+    }
+
+    actions = ["s3:PutObject"]
+    resources = ["arn:aws:s3:::${local.bucketname}/*"]
+
+    condition {
+      test = "StringEquals"
+      variable = "s3:x-amz-acl"
+      values = ["bucket-owner-full-control"]
+    }
+  }
+}
+
+data "aws_iam_policy_document" "assume_role" {
+  statement {
+    effect = "Allow"
+    sid = ""
+
+    principals {
+      type = "Service"
+      identifiers = ["cloudtrail.amazonaws.com"]
+    }
+
+    actions = ["sts:AssumeRole"]
+  }
+}
+
+data "aws_iam_policy_document" "logs" {
+  statement {
+    effect = "Allow"
+    actions = ["logs:CreateLogStream", "logs:PutLogEvents"]
+    resources = [aws_cloudwatch_log_group.cloudtrail.arn]
+  }
+}
+
 ## Resources
 
 ### Implementation
@@ -35,12 +91,7 @@ resource "aws_s3_bucket" "cloudtrail" {
 
 resource "aws_s3_bucket_policy" "cloudtrail_s3_policy" {
   bucket = aws_s3_bucket.cloudtrail.id
-  policy = templatefile(
-    "${path.module}/policies/cloudtrail_s3_policy.tpl",
-    {
-      bucket_name = local.bucketname
-    }
-  )
+  policy = data.aws_iam_policy_document.bucket.json
 }
 
 resource "aws_s3_bucket_acl" "cloudtrail_acl" {
@@ -51,18 +102,13 @@ resource "aws_s3_bucket_acl" "cloudtrail_acl" {
 resource "aws_iam_role" "cloudtrail_cloudwatch_logs_role" {
   name               = "${var.namespace}-cloudtrail-cloudwatch-logs"
   path               = "/"
-  assume_role_policy = file("${path.module}/policies/cloudtrail_assume_policy.json")
+  assume_role_policy = data.aws_iam_policy_document.assume_role.json
 }
 
 resource "aws_iam_policy" "cloudtrail_cloudwatch_logs_policy" {
   name = "${var.namespace}-cloudtrail-cloudwatch-logs"
   path = "/"
-  policy = templatefile(
-    "${path.module}/policies/cloudtrail_cloudwatch_logs_policy.tpl",
-    {
-      cloudwatch_log_group_arn = aws_cloudwatch_log_group.cloudtrail.arn
-    }
-  )
+  policy = data.aws_iam_policy_document.logs.json
 }
 
 resource "aws_iam_role_policy_attachment" "cloudtrail_cloudwatch_logs_policy_attachment" {
