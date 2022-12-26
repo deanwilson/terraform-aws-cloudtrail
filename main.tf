@@ -9,17 +9,65 @@ locals {
   bucketname = "${var.namespace}-${var.bucketname}"
 }
 
-## Resources
+## Data
 
-### IAM
+data "aws_iam_policy_document" "bucket" {
+  statement {
+    effect = "Allow"
 
-data "template_file" "cloudtrail_s3_policy_template" {
-  template = file("${path.module}/policies/cloudtrail_s3_policy.tpl")
+    principals {
+      type        = "Service"
+      identifiers = ["cloudtrail.amazonaws.com"]
+    }
 
-  vars = {
-    bucket_name = local.bucketname
+    actions   = ["s3:GetBucketAcl"]
+    resources = ["arn:aws:s3:::${local.bucketname}"]
+  }
+
+  statement {
+    effect = "Allow"
+
+    principals {
+      type        = "Service"
+      identifiers = ["cloudtrail.amazonaws.com"]
+    }
+
+    actions   = ["s3:PutObject"]
+    resources = ["arn:aws:s3:::${local.bucketname}/*"]
+
+    condition {
+      test     = "StringEquals"
+      variable = "s3:x-amz-acl"
+      values   = ["bucket-owner-full-control"]
+    }
   }
 }
+
+data "aws_iam_policy_document" "assume_role" {
+  statement {
+    effect = "Allow"
+    sid    = ""
+
+    principals {
+      type        = "Service"
+      identifiers = ["cloudtrail.amazonaws.com"]
+    }
+
+    actions = ["sts:AssumeRole"]
+  }
+}
+
+data "aws_iam_policy_document" "logs" {
+  statement {
+    effect  = "Allow"
+    actions = ["logs:CreateLogStream", "logs:PutLogEvents"]
+    resources = [
+      "${aws_cloudwatch_log_group.cloudtrail.arn}:*"
+    ]
+  }
+}
+
+## Resources
 
 ### Implementation
 
@@ -35,34 +83,34 @@ resource "aws_cloudwatch_log_group" "cloudtrail" {
 
 resource "aws_s3_bucket" "cloudtrail" {
   bucket = local.bucketname
-  acl    = "private"
-  policy = data.template_file.cloudtrail_s3_policy_template.rendered
 
   tags = merge(
     local.default_tags,
     var.additional_tags,
-    tomap({"Name" = local.bucketname})
+    tomap({ "Name" = local.bucketname })
   )
+}
+
+resource "aws_s3_bucket_policy" "cloudtrail_s3_policy" {
+  bucket = aws_s3_bucket.cloudtrail.id
+  policy = data.aws_iam_policy_document.bucket.json
+}
+
+resource "aws_s3_bucket_acl" "cloudtrail_acl" {
+  bucket = aws_s3_bucket.cloudtrail.id
+  acl    = "private"
 }
 
 resource "aws_iam_role" "cloudtrail_cloudwatch_logs_role" {
   name               = "${var.namespace}-cloudtrail-cloudwatch-logs"
   path               = "/"
-  assume_role_policy = file("${path.module}/policies/cloudtrail_assume_policy.json")
-}
-
-data "template_file" "cloudtrail_cloudwatch_logs_policy_template" {
-  template = file("${path.module}/policies/cloudtrail_cloudwatch_logs_policy.tpl")
-
-  vars = {
-    cloudwatch_log_group_arn = aws_cloudwatch_log_group.cloudtrail.arn
-  }
+  assume_role_policy = data.aws_iam_policy_document.assume_role.json
 }
 
 resource "aws_iam_policy" "cloudtrail_cloudwatch_logs_policy" {
   name   = "${var.namespace}-cloudtrail-cloudwatch-logs"
   path   = "/"
-  policy = data.template_file.cloudtrail_cloudwatch_logs_policy_template.rendered
+  policy = data.aws_iam_policy_document.logs.json
 }
 
 resource "aws_iam_role_policy_attachment" "cloudtrail_cloudwatch_logs_policy_attachment" {

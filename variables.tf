@@ -1,7 +1,7 @@
 variable "additional_tags" {
   default     = {}
   description = "The tags to apply to resources created by this module"
-  type        = map
+  type        = map(any)
 }
 
 variable "bucketname" {
